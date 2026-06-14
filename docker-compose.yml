@@ -1,45 +1,51 @@
 # DevBoard (advanced) — UI + Go backend + Postgres. That's the whole stack.
 #
-#   browser ──▶ frontend (nginx :8080→80) ──/api──▶ backend (Go :8080) ──▶ postgres
+#   browser ──▶ frontend (nginx :80) ──/api──▶ backend (Go) ──▶ postgres
+#
+# Every configurable value lives in .env — Compose loads it automatically and
+# fills in the ${...} placeholders below. Edit .env, not this file, to change
+# credentials or ports. This way learners can see in one place exactly which
+# variables get injected into the db and the backend.
 #
 # Bring it up:  docker compose up --build
-# Then open:    http://localhost:8080
+# Then open:    http://localhost:8080   (FRONTEND_HOST_PORT)
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: devboard
-      POSTGRES_PASSWORD: devboard
-      POSTGRES_DB: devboard
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U devboard -d devboard"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT}:5432"
 
   backend:
     build: ./backend
     environment:
-      PORT: "8080"
-      POSTGRES_URL: "postgres://devboard:devboard@postgres:5432/devboard?sslmode=disable"
+      PORT: "${BACKEND_PORT}"
+      # Built from the Postgres vars above so the credentials live in one place.
+      POSTGRES_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "8081:8080"   # exposed for direct curl/debugging; the UI uses the gateway
+      - "${BACKEND_HOST_PORT}:${BACKEND_PORT}"   # host:container — direct curl/debug; the UI uses the gateway
 
   frontend:
     build: ./frontend
     depends_on:
       - backend
     ports:
-      - "8080:80"
+      - "${FRONTEND_HOST_PORT}:80"
 
 volumes:
   pgdata:
