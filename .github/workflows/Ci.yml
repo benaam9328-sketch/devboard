@@ -1,4 +1,4 @@
-#Goal: Build image for Devboard frontend--
+#Goal: Build image for Devboard frontend---
 name: CI
 
 on: 
