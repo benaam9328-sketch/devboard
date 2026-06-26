@@ -24,7 +24,8 @@ jobs:
        with:
             push: true
             tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-fe:latest
-
+            context: ./frontend
+            file: ./frontend/Dockerfile
      - name: Overwrite Markdown
        run: |
           echo "Adding some Markdown content" >> $GITHUB_STEP_SUMMARY
